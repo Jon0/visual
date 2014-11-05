@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<html>
+<head>
+<style>
+rect.bordered {
+stroke: #E6E6E6;
+stroke-width:2px;
+}
+ 
+text.mono {
+font-size: 9pt;
+font-family: Consolas, courier;
+fill: #aaa;
+}
+ 
+text.axis-workweek {
+fill: #000;
+}
+ 
+text.axis-worktime {
+fill: #000;
+}
+</style>
+<script src="http://d3js.org/d3.v3.js"></script>
+</head>
+
+<body>
+<div id="chart"></div>
+ 
+<script type="text/javascript">
+var margin = { top: 180, right: 0, bottom: 100, left: 350 },
+width = 1480 - margin.left - margin.right,
+height = 1000 - margin.top - margin.bottom,
+gridSize = Math.floor(width / 24),
+legendElementWidth = gridSize * 2,
+buckets = 9,
+colors = ["#ffffd9","#edf8b1","#c7e9b4","#7fcdbb","#41b6c4","#1d91c0","#225ea8","#253494","#081d58"],
+y_labels = [],
+x_labels = [];
+
+var strings = {};
+strings["ST26Q01"] = "A desk to study at";
+strings["ST26Q02"] = "A room of your own";
+strings["ST26Q03"] = "A quiet place to study";
+strings["ST26Q04"] = "A computer used for school work";
+strings["ST26Q05"] = "Educational software";
+strings["ST26Q06"] = "A link to the Internet";
+strings["ST26Q07"] = "Classic literature";
+strings["ST26Q08"] = "Books of poetry";
+strings["ST26Q09"] = "Works of art";
+strings["ST26Q10"] = "Books to help with school work";
+strings["ST26Q11"] = "Technical books";
+strings["ST26Q12"] = "A dictionary";
+strings["ST26Q13"] = "A dishwasher";
+strings["ST26Q14"] = "A DVD player";
+
+strings["ST37Q01"] = "Using a train timetable";
+strings["ST37Q02"] = "Calculating TV Discount";
+strings["ST37Q03"] = "Calculating Sq Metres of Tiles";
+strings["ST37Q04"] = "Understanding of Graphs";
+strings["ST37Q05"] = "Solving Equation 1";
+strings["ST37Q06"] = "Distance to Scale";
+strings["ST37Q07"] = "Solving Equation 2";
+strings["ST37Q08"] = "Calculating Petrol Consumption Rate";
+
+dataset = [];
+d3.csv("heatmap_labels.csv", 
+	function(d) { return d["label_name"]; },
+	function(error, data) {
+		console.log(data);
+		for (var i = 0; i < 14; ++i) {
+			y_labels[i] = strings[data[i]];
+		}
+		for (var i = 14; i < 22; ++i) {
+		 	x_labels[i-14] = strings[data[i]];
+		}
+
+		// var svg = d3.select("#chart").append("svg")
+		// .attr("x", width + margin.left + margin.right)
+		// .attr("y", 0)
+		// .attr("width", 500)
+		// .attr("height", height)
+		// .append("g")
+
+
+		// var legend = svg.selectAll(".legend")
+		// .data([0].concat(colorScale.quantiles()), function(d) { return d; })
+		// .enter().append("g")
+		// .attr("class", "legend");
+ 
+		// legend.append("rect")
+		// .attr("x", 1000)
+		// .attr("y", 0)
+		// .attr("width", 400)
+		// .attr("height", 700)
+		// .style("fill", function(d, i) { return colors[i]; });
+ 
+		// legend.append("text")
+		// .attr("class", "mono")
+		// .text(function(d) { return "≥ " + Math.round(d); })
+		// .attr("x", function(d, i) { return legendElementWidth * i; })
+		// .attr("y", height + gridSize);
+	});
+
+
+
+d3.csv("heatmap_data.csv",
+function(d) {
+	return {
+		day: +d.x,
+		hour: +d.y,
+		value: +d.z
+	};
+},
+function(error, data) {
+	var colorScale = d3.scale.quantile()
+	.domain([0, buckets - 1, d3.max(data, function (d) { return d.value; })])
+	.range(colors);
+ 
+	var svg = d3.select("#chart").append("svg")
+	.attr("width", width + margin.left + margin.right)
+	.attr("height", height + margin.top + margin.bottom)
+	.append("g")
+	.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+ 
+	var dayLabels = svg.selectAll(".dayLabel")
+	.data(y_labels)
+	.enter().append("text")
+	.text(function (d) { return d; })
+	.attr("x", 0)
+	.attr("y", function (d, i) { return i * gridSize; })
+	.style("text-anchor", "end")
+	.attr("transform", "translate(-6," + gridSize / 1.5 + ")");
+ 
+	var timeLabels = svg.selectAll(".timeLabel")
+	.data(x_labels)
+	.enter().append("text")
+	.text(function(d) { return d; })
+	.attr("x", function(d, i) { return i * gridSize; })
+	.attr("y", function(d, i) { return 0 - i * 20; })
+	.style("text-anchor", "start")
+	.attr("transform", "translate(0, -6)");
+ 
+	var heatMap = svg.selectAll(".hour")
+	.data(data)
+	.enter().append("rect")
+	.attr("x", function(d) { return (d.hour) * gridSize; })
+	.attr("y", function(d) { return (d.day) * gridSize; })
+	.attr("rx", 4)
+	.attr("ry", 4)
+	.attr("class", "hour bordered")
+	.attr("width", gridSize)
+	.attr("height", gridSize)
+	.style("fill", colors[0]);
+ 
+	heatMap.transition().duration(1000)
+	.style("fill", function(d) { return colorScale(d.value); });
+ 
+	heatMap.append("title").text(function(d) { return d.value; });
+	var legend = svg.selectAll(".legend")
+	.data([0].concat(colorScale.quantiles()), function(d) { return d; })
+	.enter().append("g")
+	.attr("class", "legend");
+ 
+	legend.append("rect")
+	.attr("x", function(d, i) { return legendElementWidth * i; })
+	.attr("y", height)
+	.attr("width", legendElementWidth)
+	.attr("height", gridSize / 2)
+	.style("fill", function(d, i) { return colors[i]; });
+ 
+	legend.append("text")
+	.attr("class", "mono")
+	.text(function(d) { return "≥ " + Math.round(d); })
+	.attr("x", function(d, i) { return legendElementWidth * i; })
+	.attr("y", height + gridSize);
+
+	legend.append("text2")
+	.attr("class", "mono")
+	.text(function(d) { return "x_labels[d]"; })
+	.attr("x", width + gridSize)
+	.attr("y", function(d, i) { return 75 * i; });
+});
+
+</script>
+</body>
+</html>

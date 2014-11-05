@@ -1,0 +1,41 @@
+<html>
+  <head>
+  	<script src="http://d3js.org/d3.v3.js"></script>
+    <script type='text/javascript' src='https://www.google.com/jsapi'></script>
+    <script type='text/javascript'>
+     google.load('visualization', '1', {'packages': ['geochart']});
+     google.setOnLoadCallback(drawMarkersMap);
+
+	function drawMarkersMap() {
+
+		d3.csv("geomap_data.csv", 
+			function(d) { return [d["country"], +d["x"], +d["y"]]; },
+			function(error, data) {
+
+				var table = [['Country','Feature Score','Math Score']];
+				table = table.concat(data);
+
+				console.log(table);
+				console.log(data);
+
+				var mapdata = google.visualization.arrayToDataTable(table);
+
+				var options = {
+					displayMode: 'markers',
+					colorAxis: {colors: ['red', 'blue']}
+				};
+
+				var chart = new google.visualization.GeoChart(document.getElementById('chart_div'));
+				chart.draw(mapdata, options);
+			});
+
+	}
+
+
+
+    </script>
+  </head>
+  <body>
+    <div id="chart_div" style="width: 1080px; height: 840px;"></div>
+  </body>
+</html>
